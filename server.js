@@ -11,11 +11,12 @@ app.use(express.static("public"));
 app.use(express.static("public/game"));
 
 app.get("/", (req, res) => {
-    res.render("homepage", { title: "Multiplayer Snake", message: "Game coming soon..." });
+    res.render("homepage", { title: "Multiplayer Snake" });
 });
 
 app.get("/game", (req, res) => {
-    res.render("game", { title: "Snake Game" });
+    const playerName = req.query.name || "Player";
+    res.render("game", { title: "Snake Game", playerName });
 });
 
 app.listen(PORT, () => {

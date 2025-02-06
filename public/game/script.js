@@ -1,16 +1,20 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let marginSize = 150;
-
+const marginSize = 150;
 let canvasWidth = window.innerWidth - marginSize;
 let canvasHeight = window.innerHeight - marginSize;
 const minSize = 300;
-
 let snakeSize = 20;
 let snake = [{ x: 100, y: 100 }];
 let direction = "ArrowRight";
 let food = { x: 200, y: 200 };
+let score = 0;
+const scoreDisplay = document.getElementById("score");
+const eatSound = new Audio("music/eat.mp3");
+const gameOverSound = new Audio("music/game_over.mp3");
+const stepOneSound = new Audio("music/step1.mp3");
+const stepTwoSound = new Audio("music/step2.mp3");
 
 const directions = {
     "ArrowUp": { x: 0, y: -snakeSize },
@@ -60,8 +64,9 @@ function checkSelfCollision(){
 }
 
 function gameOver(){
-    alert("Game over :(");
     clearInterval(gameLoopInterval);
+    clearInterval(gameSoundTrackInterval);
+    alert("Game over :(");
 }
 
 function drawSnake() {
@@ -95,6 +100,7 @@ function moveSnake() {
 
     if(checkSelfCollision() || checkWallCollision())
     {
+        playSound(gameOverSound);
         gameOver();
         return;
     }
@@ -109,15 +115,12 @@ function generateFood() {
     const x = Math.floor(Math.random() * cols) * snakeSize;
     const y = Math.floor(Math.random() * rows) * snakeSize;
 
-    console.log("Food new coords: x = " + x + " : y = " + y);
     return { x, y };
 }
 
 function checkFoodCollision(){
     const head = snake[0];
     const tolerance = snakeSize / 2;
-
-    console.log("snake head: x = " + head.x + " y = " + head.y);
 
     let foodCollisionCondition = (
         head.x < food.x + tolerance &&
@@ -126,10 +129,16 @@ function checkFoodCollision(){
         head.y + snakeSize > food.y - tolerance);
 
     if(foodCollisionCondition){
-        console.log("food colided");
+        updateScore();
         growSnake();
+        playSound(eatSound);
         food = generateFood();
     }
+}
+
+function updateScore(){
+    score++; 
+    scoreDisplay.textContent = `Score: ${score}`;
 }
 
 function growSnake(){
@@ -137,16 +146,26 @@ function growSnake(){
     let newBlock = { x: tail.x, y: tail.y };
 
     if (direction === "ArrowUp") {
-        newBlock.y = tail.y + snakeSize; // Add below the tail
+        newBlock.y = tail.y + snakeSize;
     } else if (direction === "ArrowDown") {
-        newBlock.y = tail.y - snakeSize; // Add above the tail
+        newBlock.y = tail.y - snakeSize;
     } else if (direction === "ArrowLeft") {
-        newBlock.x = tail.x + snakeSize; // Add to the right of the tail
+        newBlock.x = tail.x + snakeSize;
     } else if (direction === "ArrowRight") {
-        newBlock.x = tail.x - snakeSize; // Add to the left of the tail
+        newBlock.x = tail.x - snakeSize;
     }
 
-    snake.push(newBlock); // Add new block to the snake
+    snake.push(newBlock);
+}
+
+function playSound(sound){
+    sound.currentTime = 0;
+    sound.play();
+}
+
+function playGameOverSound(){
+    gameOverSound.currentTime = 0;
+    gameOverSound.play();
 }
 
 function gameLoop() {
@@ -158,8 +177,19 @@ function gameLoop() {
     drawFood(); 
 }
 
+function gameSoundtrack(){
+    playSound(stepOneSound);
+    //playSound(stepTwoSound);
+}
+
 window.addEventListener("resize", updateCanvasSize);
 
 updateCanvasSize();
 
+// document.body.addEventListener("click", () => {
+//     eatSound.play().catch(() => console.log("User interaction required to enable sound."));
+// }, { once: true }); // Runs only once
+
 const gameLoopInterval = setInterval(gameLoop, 100);
+
+const gameSoundTrackInterval = setInterval(gameSoundtrack, 1200);
