@@ -10,6 +10,8 @@ let snake = [{ x: 100, y: 100 }];
 let direction = "ArrowRight";
 let food = { x: 200, y: 200 };
 let score = 0;
+let isGameRunning = true;
+
 const scoreDisplay = document.getElementById("score");
 const eatSound = new Audio("music/eat.mp3");
 const gameOverSound = new Audio("music/game_over.mp3");
@@ -27,6 +29,10 @@ const directions = {
 document.addEventListener("keydown", function(e){
     if(directions[e.key] && e.key !== direction){
         direction = e.key;
+    }
+
+    if (e.code === "Space" && !isGameRunning) {
+        this.location.reload();
     }
 });
 
@@ -66,7 +72,28 @@ function checkSelfCollision(){
 function gameOver(){
     clearInterval(gameLoopInterval);
     clearInterval(gameSoundTrackInterval);
-    alert("Game over :(");
+    isGameRunning = false;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const boxWidth = 400;
+    const boxHeight = 250;
+    const boxX = (canvas.width - boxWidth) / 2;
+    const boxY = (canvas.height - boxHeight) / 2;
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+    ctx.fillStyle = "#ffeb3b";
+    ctx.font = "bold 50px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 20);
+
+    ctx.font = "35px Arial";
+    ctx.fillText("Press Space to Retry", canvas.width / 2, canvas.height / 2 + 30);
 }
 
 function drawSnake() {
@@ -179,16 +206,11 @@ function gameLoop() {
 
 function gameSoundtrack(){
     playSound(stepOneSound);
-    //playSound(stepTwoSound);
 }
 
 window.addEventListener("resize", updateCanvasSize);
 
 updateCanvasSize();
-
-// document.body.addEventListener("click", () => {
-//     eatSound.play().catch(() => console.log("User interaction required to enable sound."));
-// }, { once: true }); // Runs only once
 
 const gameLoopInterval = setInterval(gameLoop, 100);
 
