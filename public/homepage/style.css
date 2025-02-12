@@ -64,3 +64,32 @@ input:focus {
     margin-bottom: 10px;
     color: white;
 }
+
+
+h2 {
+    font-size: 22px;
+    margin-top: 15px;
+    color: #ffeb3b;
+}
+
+#leaderboard {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    text-align: left;
+}
+
+#leaderboard li {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#leaderboard li:nth-child(1) { color: gold; }
+
+#leaderboard li:nth-child(2) { color: silver; }
+
+#leaderboard li:nth-child(3) { color: #cd7f32; }

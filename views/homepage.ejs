@@ -10,10 +10,16 @@
     <div class="container">
         <h1>🐍 Multiplayer Snake</h1>
         <p>Enter your name to begin:</p>
-        <input type="text" id="playerName" placeholder="Your name">
-        <button id="startGame">Start Game</button>
+        <form id="startGameForm">
+            <input type="text" id="playerName" placeholder="Your name" required>
+            <button type="submit" id="startGameButton">Start Game</button>
+        </form>
+
+        <h2>🏆 Top 10 Scores</h2>
+        <ul id="leaderboard"></ul>
     </div>
     
-    <script src="/homepage/script.js"></script>
+    <script type="module"  src="/scores_library/scoresLibrary.js"></script>
+    <script type="module" src="/homepage/script.js"></script>
 </body>
 </html>

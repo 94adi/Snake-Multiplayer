@@ -1,3 +1,5 @@
+import { submitScore } from "../scores_library/scoresLibrary.js";
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -73,6 +75,9 @@ function gameOver(){
     clearInterval(gameLoopInterval);
     clearInterval(gameSoundTrackInterval);
     isGameRunning = false;
+    const playerName = getPlayerNameFromURL() || "Unknown Player";
+    //fire and forget
+    submitScore(playerName, score);
     
     ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
@@ -206,6 +211,11 @@ function gameLoop() {
 
 function gameSoundtrack(){
     playSound(stepOneSound);
+}
+
+function getPlayerNameFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('name');
 }
 
 window.addEventListener("resize", updateCanvasSize);
