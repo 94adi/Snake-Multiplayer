@@ -3,56 +3,63 @@ import { submitScore } from "../scores_library/scoresLibrary.js";
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const marginSize = 150;
-let canvasWidth = window.innerWidth - marginSize;
-let canvasHeight = window.innerHeight - marginSize;
-const minSize = 300;
-let snakeSize = 20;
+const MARGIN_SIZE = 150;
+const MIN_SIZE = 300;
+
+const SNAKE_SIZE = 20;
+
+const dir = Object.freeze({
+    Up: "ArrowUp",
+    Down: "ArrowDown",
+    Left: "ArrowLeft",
+    Right: "ArrowRight"
+});
+
+const directions = Object.freeze({
+    [dir.Up]: { x: 0, y: -SNAKE_SIZE },
+    [dir.Down]: { x: 0, y: SNAKE_SIZE },
+    [dir.Left]: { x: -SNAKE_SIZE, y: 0 },
+    [dir.Right]: { x: SNAKE_SIZE, y: 0 }
+});
+
+const sounds = {
+    eat: new Audio("music/eat.mp3"),
+    gameOver: new Audio("music/game_over.mp3"),
+    stepOne: new Audio("music/step1.mp3"),
+    stepTwo: new Audio("music/step2.mp3"),
+};
+
+const scoreDisplay = document.getElementById("score");
+const defaultDirection = dir.Right;
+
+let direction = defaultDirection;
+
+
+let canvasWidth = window.innerWidth - MARGIN_SIZE;
+let canvasHeight = window.innerHeight - MARGIN_SIZE;
+
 let snake = [{ x: 100, y: 100 }];
-let direction = "ArrowRight";
+
 let food = { x: 200, y: 200 };
 let score = 0;
 let isGameRunning = true;
 
-const scoreDisplay = document.getElementById("score");
-const eatSound = new Audio("music/eat.mp3");
-const gameOverSound = new Audio("music/game_over.mp3");
-const stepOneSound = new Audio("music/step1.mp3");
-const stepTwoSound = new Audio("music/step2.mp3");
 
-const directions = {
-    "ArrowUp": { x: 0, y: -snakeSize },
-    "ArrowDown": { x: 0, y: snakeSize },
-    "ArrowLeft": { x: -snakeSize, y: 0 },
-    "ArrowRight": { x: snakeSize, y: 0 }
-};
+document.addEventListener("keydown", handleKeyPress);
+canvas.addEventListener("mousedown", handleUIInput);
+canvas.addEventListener("touchstart", handleUIInput);
 
-
-document.addEventListener("keydown", function(e){
-    let newDirection;
-
-    if(directions[e.key] && e.key !== direction){
-        newDirection = e.key;
-    }
-
-    if (!isOppositeDirection(newDirection) && !wouldCollideWithSelf(newDirection)) {
-        direction = newDirection;
-    }
-
-    if (e.code === "Space" && !isGameRunning) {
-        this.location.reload();
-    }
-});
-
-canvas.addEventListener("mousedown", handleInput);
-canvas.addEventListener("touchstart", handleInput);
-
-function handleInput(e)
+function handleUIInput(e)
 {
     let gameRectangle = canvas.getBoundingClientRect();
     let clickX, clickY;
     const head = snake[0];
     let newDirection;
+
+    if (!isGameRunning) {
+        location.reload();
+        return;
+    }
 
     if (e.type === "touchstart") 
     {
@@ -70,14 +77,14 @@ function handleInput(e)
 
     if (Math.abs(dx) > Math.abs(dy)) 
     {
-        newDirection = dx > 0 ? "ArrowRight" : "ArrowLeft";
+        newDirection = dx > 0 ? dir.Right : dir.Left;
     } 
     else 
     {
-        newDirection = dy > 0 ? "ArrowDown" : "ArrowUp";
+        newDirection = dy > 0 ? dir.Down : dir.Up;
     }
 
-    if(!isOppositeDirection(newDirection) && !wouldCollideWithSelf(newDirection))
+    if(!isSelfCollision(newDirection))
     {
         direction = newDirection;
     }
@@ -85,11 +92,22 @@ function handleInput(e)
     e.preventDefault();
 }
 
-function updateCanvasSize() {
-    canvasWidth = Math.max(window.innerWidth - marginSize, minSize);
-    canvasHeight = Math.max(window.innerHeight - marginSize, minSize);
+function handleKeyPress(e) {
+    if (e.code === "Space" && !isGameRunning) {
+        location.reload();
+        return;
+    }
 
-    snakeSize = Math.floor(Math.min(canvasWidth, canvasHeight) / snakeSize);
+    let isNewDir = (directions[e.key] && e.key !== direction);
+
+    if(isNewDir && !isSelfCollision(e.key)){
+        direction = e.key;
+    }
+}
+
+function updateCanvasSize() {
+    canvasWidth = Math.max(window.innerWidth - MARGIN_SIZE, MIN_SIZE);
+    canvasHeight = Math.max(window.innerHeight - MARGIN_SIZE, MIN_SIZE);
 
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -101,19 +119,6 @@ function checkWallCollision(){
 
     if(isColliding){
         return true;
-    }
-    return false;
-}
-
-function checkSelfCollision(){
-    const head = snake[0];
-
-    for(let i = 1; i < snake.length; i++)
-    {
-        if(snake[i].x == head.x && snake[i].y == head.y)
-        {
-            return true;
-        }
     }
     return false;
 }
@@ -145,19 +150,19 @@ function gameOver(){
     ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 20);
 
     ctx.font = "35px Arial";
-    ctx.fillText("Press Space to Retry", canvas.width / 2, canvas.height / 2 + 30);
+    ctx.fillText("Press SPACE or TAP", canvas.width / 2, canvas.height / 2 + 30);
 }
 
 function drawSnake() {
     ctx.fillStyle = "green";
     snake.forEach(segment => {
-        ctx.fillRect(segment.x, segment.y, snakeSize, snakeSize);
+        ctx.fillRect(segment.x, segment.y, SNAKE_SIZE, SNAKE_SIZE);
     });
 }
 
 function drawFood() {
     ctx.fillStyle = "red";
-    ctx.fillRect(food.x, food.y, snakeSize, snakeSize);
+    ctx.fillRect(food.x, food.y, SNAKE_SIZE, SNAKE_SIZE);
 }
 
 function drawCanvasBorder() {
@@ -177,9 +182,9 @@ function moveSnake() {
 
     checkFoodCollision();
 
-    if(checkSelfCollision() || checkWallCollision())
+    if(checkWallCollision())
     {
-        playSound(gameOverSound);
+        playSound(sounds.gameOver);
         gameOver();
         return;
     }
@@ -188,29 +193,29 @@ function moveSnake() {
 }
 
 function generateFood() {
-    const cols = Math.floor(canvas.width / snakeSize); // Total columns
-    const rows = Math.floor(canvas.height / snakeSize); // Total rows
+    const cols = Math.floor(canvas.width / SNAKE_SIZE); // Total columns
+    const rows = Math.floor(canvas.height / SNAKE_SIZE); // Total rows
 
-    const x = Math.floor(Math.random() * cols) * snakeSize;
-    const y = Math.floor(Math.random() * rows) * snakeSize;
+    const x = Math.floor(Math.random() * cols) * SNAKE_SIZE;
+    const y = Math.floor(Math.random() * rows) * SNAKE_SIZE;
 
     return { x, y };
 }
 
 function checkFoodCollision(){
     const head = snake[0];
-    const tolerance = snakeSize / 2;
+    const tolerance = SNAKE_SIZE / 2;
 
     let foodCollisionCondition = (
         head.x < food.x + tolerance &&
-        head.x + snakeSize > food.x - tolerance &&
+        head.x + SNAKE_SIZE > food.x - tolerance &&
         head.y < food.y + tolerance &&
-        head.y + snakeSize > food.y - tolerance);
+        head.y + SNAKE_SIZE > food.y - tolerance);
 
     if(foodCollisionCondition){
         updateScore();
         growSnake();
-        playSound(eatSound);
+        playSound(sounds.eat);
         food = generateFood();
     }
 }
@@ -224,14 +229,14 @@ function growSnake(){
     const tail = snake[snake.length - 1];
     let newBlock = { x: tail.x, y: tail.y };
 
-    if (direction === "ArrowUp") {
-        newBlock.y = tail.y + snakeSize;
-    } else if (direction === "ArrowDown") {
-        newBlock.y = tail.y - snakeSize;
-    } else if (direction === "ArrowLeft") {
-        newBlock.x = tail.x + snakeSize;
-    } else if (direction === "ArrowRight") {
-        newBlock.x = tail.x - snakeSize;
+    if (direction === dir.Up) {
+        newBlock.y = tail.y + SNAKE_SIZE;
+    } else if (direction === dir.Down) {
+        newBlock.y = tail.y - SNAKE_SIZE;
+    } else if (direction === dir.Left) {
+        newBlock.x = tail.x + SNAKE_SIZE;
+    } else if (direction === dir.Right) {
+        newBlock.x = tail.x - SNAKE_SIZE;
     }
 
     snake.push(newBlock);
@@ -240,11 +245,6 @@ function growSnake(){
 function playSound(sound){
     sound.currentTime = 0;
     sound.play();
-}
-
-function playGameOverSound(){
-    gameOverSound.currentTime = 0;
-    gameOverSound.play();
 }
 
 function gameLoop() {
@@ -257,7 +257,7 @@ function gameLoop() {
 }
 
 function gameSoundtrack(){
-    playSound(stepOneSound);
+    playSound(sounds.stepOne);
 }
 
 function getPlayerNameFromURL() {
@@ -266,22 +266,27 @@ function getPlayerNameFromURL() {
 }
 
 function isOppositeDirection(newDir) {
-    return (direction === "ArrowUp" && newDir === "ArrowDown") ||
-           (direction === "ArrowDown" && newDir === "ArrowUp") ||
-           (direction === "ArrowLeft" && newDir === "ArrowRight") ||
-           (direction === "ArrowRight" && newDir === "ArrowLeft");
+    return (direction === dir.Up && newDir === dir.Down) ||
+           (direction === dir.Down && newDir === dir.Up) ||
+           (direction === dir.Left && newDir === dir.Right) ||
+           (direction === dir.Right && newDir === dir.Left);
 }
 
 function wouldCollideWithSelf(newDir) {
     let nextX = snake[0].x;
     let nextY = snake[0].y;
 
-    if (newDir === "ArrowUp") nextY -= snakeSize;
-    if (newDir === "ArrowDown") nextY += snakeSize;
-    if (newDir === "ArrowLeft") nextX -= snakeSize;
-    if (newDir === "ArrowRight") nextX += snakeSize;
+    if (newDir === dir.Up) nextY -= SNAKE_SIZE;
+    if (newDir === dir.Down) nextY += SNAKE_SIZE;
+    if (newDir === dir.Left) nextX -= SNAKE_SIZE;
+    if (newDir === dir.Right) nextX += SNAKE_SIZE;
 
     return snake.some(segment => segment.x === nextX && segment.y === nextY);
+}
+
+function isSelfCollision(key){
+    let result = (isOppositeDirection(key) && wouldCollideWithSelf(key));
+    return result;
 }
 
 window.addEventListener("resize", updateCanvasSize);
