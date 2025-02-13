@@ -29,14 +29,61 @@ const directions = {
 
 
 document.addEventListener("keydown", function(e){
+    let newDirection;
+
     if(directions[e.key] && e.key !== direction){
-        direction = e.key;
+        newDirection = e.key;
+    }
+
+    if (!isOppositeDirection(newDirection) && !wouldCollideWithSelf(newDirection)) {
+        direction = newDirection;
     }
 
     if (e.code === "Space" && !isGameRunning) {
         this.location.reload();
     }
 });
+
+canvas.addEventListener("mousedown", handleInput);
+canvas.addEventListener("touchstart", handleInput);
+
+function handleInput(e)
+{
+    let gameRectangle = canvas.getBoundingClientRect();
+    let clickX, clickY;
+    const head = snake[0];
+    let newDirection;
+
+    if (e.type === "touchstart") 
+    {
+        clickX = e.touches[0].clientX - gameRectangle.left;
+        clickY = e.touches[0].clientY - gameRectangle.top;
+    } 
+    else 
+    {
+        clickX = e.clientX - gameRectangle.left;
+        clickY = e.clientY - gameRectangle.top;
+    }
+
+    let dx = clickX - head.x;
+    let dy = clickY - head.y;
+
+    if (Math.abs(dx) > Math.abs(dy)) 
+    {
+        newDirection = dx > 0 ? "ArrowRight" : "ArrowLeft";
+    } 
+    else 
+    {
+        newDirection = dy > 0 ? "ArrowDown" : "ArrowUp";
+    }
+
+    if(!isOppositeDirection(newDirection) && !wouldCollideWithSelf(newDirection))
+    {
+        direction = newDirection;
+    }
+
+    e.preventDefault();
+}
 
 function updateCanvasSize() {
     canvasWidth = Math.max(window.innerWidth - marginSize, minSize);
@@ -216,6 +263,25 @@ function gameSoundtrack(){
 function getPlayerNameFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('name');
+}
+
+function isOppositeDirection(newDir) {
+    return (direction === "ArrowUp" && newDir === "ArrowDown") ||
+           (direction === "ArrowDown" && newDir === "ArrowUp") ||
+           (direction === "ArrowLeft" && newDir === "ArrowRight") ||
+           (direction === "ArrowRight" && newDir === "ArrowLeft");
+}
+
+function wouldCollideWithSelf(newDir) {
+    let nextX = snake[0].x;
+    let nextY = snake[0].y;
+
+    if (newDir === "ArrowUp") nextY -= snakeSize;
+    if (newDir === "ArrowDown") nextY += snakeSize;
+    if (newDir === "ArrowLeft") nextX -= snakeSize;
+    if (newDir === "ArrowRight") nextX += snakeSize;
+
+    return snake.some(segment => segment.x === nextX && segment.y === nextY);
 }
 
 window.addEventListener("resize", updateCanvasSize);
